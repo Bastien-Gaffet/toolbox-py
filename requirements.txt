@@ -1,0 +1,28 @@
+# toolbox-py — dépendances
+# Installer avec : pip install -r requirements.txt
+
+# Lecture de PDF (recherche_pdf.py)
+pdfplumber
+
+# Traitement d'images et métadonnées EXIF (photos_manager.py)
+Pillow
+piexif
+
+# Requêtes HTTP et scraping (telechargeur_batch.py, cdp_scraper.py)
+requests
+beautifulsoup4
+
+# Lecture/écriture PDF (metadata_cleaner.py)
+pypdf
+
+# Manipulation documents Word (metadata_cleaner.py)
+python-docx
+
+# Chiffrement AES-256 (chiffrer_dossier.py)
+cryptography
+
+# Monitoring système (moniteur_systeme.py)
+psutil
+
+# Couleurs terminal (tous les scripts)
+colorama
