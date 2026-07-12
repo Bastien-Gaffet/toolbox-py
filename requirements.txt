@@ -8,9 +8,8 @@ pdfplumber
 Pillow
 piexif
 
-# Requêtes HTTP et scraping (telechargeur_batch.py, cdp_scraper.py)
+# Requêtes HTTP (telechargeur_batch.py)
 requests
-beautifulsoup4
 
 # Lecture/écriture PDF (metadata_cleaner.py)
 pypdf

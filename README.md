@@ -31,7 +31,6 @@
 |--------|-------------|
 | [`scan_reseau.py`](scan_reseau.py) | Scanne le réseau local : liste les appareils connectés (IP, nom, MAC, fabricant), détecte les ports ouverts |
 | [`telechargeur_batch.py`](telechargeur_batch.py) | Télécharge une liste d'URLs en parallèle avec reprise, vérification SHA-256 et support des cookies |
-| [`cdp_scraper.py`](cdp_scraper.py) | Scraper pour cahier-de-prepa.fr : connexion terminal, découverte automatique et téléchargement des documents |
 
 ### 🔒 Sécurité & Confidentialité
 
@@ -103,7 +102,6 @@ pip install -r requirements.txt
 | `nettoyer_dossier.py` | `colorama` (optionnel) |
 | `scan_reseau.py` | `colorama` (optionnel) |
 | `telechargeur_batch.py` | `requests`, `colorama` (optionnel) |
-| `cdp_scraper.py` | `requests`, `beautifulsoup4` (optionnel), `colorama` (optionnel) |
 | `metadata_cleaner.py` | `Pillow`, `piexif`, `pypdf`, `python-docx`, `colorama` (optionnel) |
 | `chiffrer_dossier.py` | `cryptography`, `colorama` (optionnel) |
 | `effacement_securise.py` | `colorama` (optionnel) |
@@ -203,7 +201,6 @@ toolbox-py/
 ├── analyse_espace.py
 ├── scan_reseau.py
 ├── telechargeur_batch.py
-├── cdp_scraper.py
 ├── metadata_cleaner.py
 ├── chiffrer_dossier.py
 ├── effacement_securise.py
@@ -227,7 +224,6 @@ toolbox-py/
 │   ├── analyse_espace_doc.md
 │   ├── scan_reseau_doc.md
 │   ├── telechargeur_batch_doc.md
-│   ├── cdp_scraper_doc.md
 │   ├── metadata_cleaner_doc.md
 │   ├── chiffrer_dossier_doc.md
 │   ├── effacement_securise_doc.md

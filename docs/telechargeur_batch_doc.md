@@ -13,7 +13,7 @@ python telechargeur_batch.py liste.txt
 # Avec dossier de sortie et cookies
 python telechargeur_batch.py liste.txt -s ./telechargements --cookie "session=abc123"
 
-# Avec fichier de cookies (exporté par cdp_scraper.py)
+# Avec fichier de cookies (format Netscape ou clé=valeur)
 python telechargeur_batch.py liste.txt --cookie-fichier cookies.txt
 
 # 4 téléchargements simultanés, rapport CSV
@@ -84,16 +84,7 @@ python telechargeur_batch.py liste.txt --cookie "CDP_SESSION_PERM=abc123; autre=
 **Via fichier texte** (format Netscape ou simplifié) :
 ```
 # Netscape HTTP Cookie File
-.cahier-de-prepa.fr	TRUE	/	FALSE	0	CDP_SESSION_PERM	abc123
-```
-
-**Utilisation avec cdp_scraper.py** — le scraper peut exporter ses cookies directement :
-```bash
-# Exporter les cookies après connexion
-python cdp_scraper.py --url https://cahier-de-prepa.fr/ma-classe --cookie-sortie cookies.txt --liste urls.txt
-
-# Utiliser les cookies exportés pour télécharger
-python telechargeur_batch.py urls.txt --cookie-fichier cookies.txt
+.exemple.fr	TRUE	/	FALSE	0	SESSION	abc123
 ```
 
 ---
@@ -135,7 +126,6 @@ Statuts possibles : `OK`, `ERREUR`, `SHA256_INVALIDE`, `IGNORE`
 
 ## 💡 Cas d'usage
 
-- **cahier-de-prepa.fr** : télécharger tous les cours d'une classe en une commande (associé à `cdp_scraper.py`)
 - **Archives** : télécharger une liste de fichiers volumineux en parallèle avec reprise
 - **Sauvegardes** : récupérer des fichiers depuis un serveur avec vérification d'intégrité
 - **Ressources pédagogiques** : Moodle, ENT, portails universitaires avec cookies exportés
