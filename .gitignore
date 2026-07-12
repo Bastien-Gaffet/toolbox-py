@@ -1,0 +1,6 @@
+# Fichiers personnels — ne jamais publier
+PERSO_*.md
+
+# Cache Python
+__pycache__/
+*.pyc
