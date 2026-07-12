@@ -67,6 +67,7 @@
 | [`audio_converter.py`](audio_converter.py) | Convertit des fichiers audio en batch (MP3, FLAC, WAV, OGG, OPUS…), normalise le volume, extrait l'audio de vidéos |
 | [`sous_titres_toolkit.py`](sous_titres_toolkit.py) | Outils SRT/VTT : recalage temporel, synchronisation 2 points, fusion bilingue, conversion de format, nettoyage balises |
 | [`miniatures_batch.py`](miniatures_batch.py) | Redimensionne des images en masse (ajuster/remplir/étirer), génère des miniatures avec filigrane texte ou image |
+| [`sauvegarde_telephone.py`](sauvegarde_telephone.py) | Sauvegarde les photos/vidéos d'un téléphone Android vers un disque (USB/ADB), modes miroir ou trié, incrémental |
 
 ### 📄 PDF
 
@@ -113,6 +114,7 @@ pip install -r requirements.txt
 | `audio_converter.py` | `ffmpeg` (outil externe, non-Python) |
 | `sous_titres_toolkit.py` | aucune (stdlib uniquement) |
 | `miniatures_batch.py` | `Pillow`, `colorama` (optionnel) |
+| `sauvegarde_telephone.py` | `adb` (outil externe, non-Python), `colorama` (optionnel) |
 
 ---
 
@@ -212,6 +214,7 @@ toolbox-py/
 ├── audio_converter.py
 ├── sous_titres_toolkit.py
 ├── miniatures_batch.py
+├── sauvegarde_telephone.py
 ├── docs/
 │   ├── ranger_dossier_doc.md
 │   ├── recherche_pdf_doc.md
@@ -234,7 +237,8 @@ toolbox-py/
 │   ├── email_batch_doc.md
 │   ├── audio_converter_doc.md
 │   ├── sous_titres_toolkit_doc.md
-│   └── miniatures_batch_doc.md
+│   ├── miniatures_batch_doc.md
+│   └── sauvegarde_telephone_doc.md
 ├── requirements.txt
 └── README.md
 ```
