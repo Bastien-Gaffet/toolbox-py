@@ -17,6 +17,7 @@
 | [`sync_dossiers.py`](sync_dossiers.py) | Synchronisation unidirectionnelle entre deux dossiers — rapport avant action, détection nouveaux/modifiés/supprimés |
 | [`nettoyer_dossier.py`](nettoyer_dossier.py) | Supprime fichiers temporaires, .DS_Store, Thumbs.db, dossiers vides, copies dupliquées (_copie, (1)…) |
 | [`extracteur_archives.py`](extracteur_archives.py) | Décompresse en masse les archives d'un dossier (zip, tar.gz, gz natifs ; 7z/rar en option), chacune dans son sous-dossier |
+| [`trieur_doublons.py`](trieur_doublons.py) | Détecte les fichiers en double (hash SHA-256) dans toute une arborescence, tous types ; rapport, suppression ou déplacement des doublons |
 
 ### 📊 Analyse & Rapports
 
@@ -104,6 +105,7 @@ pip install -r requirements.txt
 | `sync_dossiers.py` | `colorama` (optionnel) |
 | `nettoyer_dossier.py` | `colorama` (optionnel) |
 | `extracteur_archives.py` | `py7zr` (pour .7z), `rarfile` (pour .rar), `colorama` (optionnel) |
+| `trieur_doublons.py` | `colorama` (optionnel) |
 | `scan_reseau.py` | `colorama` (optionnel) |
 | `telechargeur_batch.py` | `requests`, `colorama` (optionnel) |
 | `video_downloader.py` | `yt-dlp`, `ffmpeg` (externe, pour HD/MP3), `colorama` (optionnel) |
@@ -164,6 +166,10 @@ python recherche_pdf.py ./cours "photosynthèse" -i
 # Décompresser toutes les archives d'un dossier
 python extracteur_archives.py ./telechargements --simulation
 python extracteur_archives.py ./telechargements
+
+# Trouver les fichiers en double (tous types) et récupérer de la place
+python trieur_doublons.py "D:\Rassemblement"
+python trieur_doublons.py "D:\Rassemblement" --deplacer "D:\_doublons"
 
 # Gérer les photos
 python photos_manager.py ~/Photos --doublons --simulation
@@ -244,6 +250,7 @@ toolbox-py/
 ├── sync_dossiers.py
 ├── nettoyer_dossier.py
 ├── extracteur_archives.py
+├── trieur_doublons.py
 ├── inventaire_dossier.py
 ├── comparateur_dossiers.py
 ├── analyse_espace.py
@@ -270,6 +277,7 @@ toolbox-py/
 │   ├── sync_dossiers_doc.md
 │   ├── nettoyer_dossier_doc.md
 │   ├── extracteur_archives_doc.md
+│   ├── trieur_doublons_doc.md
 │   ├── inventaire_dossier_doc.md
 │   ├── comparateur_dossiers_doc.md
 │   ├── analyse_espace_doc.md
