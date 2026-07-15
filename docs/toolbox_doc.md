@@ -1,0 +1,75 @@
+# 🧰 toolbox.py — Documentation
+
+Lanceur interactif de toute la boîte à outils. Un menu à flèches (Rich + questionary)
+qui découvre automatiquement les scripts, les regroupe par catégorie et lance celui
+choisi — **sans avoir à retenir les commandes ni les arguments**.
+
+---
+
+## 📦 Dépendances
+
+```bash
+pip install rich questionary
+```
+
+---
+
+## 🚀 Lancement
+
+```bash
+python toolbox.py
+```
+
+Aucun argument. Le lanceur est purement interactif.
+
+---
+
+## 🧭 Fonctionnement
+
+```
+Catégorie  →  Outil  →  Action (Lancer / Voir l'aide / Retour)  →  Arguments  →  Exécution
+```
+
+1. **Catégorie** — les mêmes catégories que le README (Fichiers & Dossiers, Réseau, Sécurité…).
+2. **Outil** — la liste des scripts de la catégorie, avec leur description.
+3. **Action** :
+   - **▶ Lancer** — demande la ligne d'arguments, puis exécute le script.
+   - **❔ Voir l'aide** — affiche le `--help` du script.
+   - **↩ Retour** — remonte d'un niveau.
+4. **Arguments** — on tape la ligne comme en CLI, ex : `"D:\Photos" --simulation`.
+   Les chemins Windows avec `\` et les guillemets sont gérés correctement.
+
+Le script sélectionné tourne dans le même terminal (les scripts interactifs, barres de
+progression, invites `[o/N]`… fonctionnent normalement). À la fin, on revient au menu.
+
+---
+
+## ⚙️ Découverte automatique des outils
+
+Le lanceur **lit `README.md`** : chaque ligne de tableau
+`| [`script.py`](script.py) | Description |` sous un titre `### Catégorie` devient une
+entrée du menu.
+
+Conséquences pratiques :
+
+- **Ajouter un outil** = l'ajouter au tableau du README + déposer son `.py`. Rien à
+  modifier dans `toolbox.py`.
+- Les entrées marquées *(à venir)* dont le fichier `.py` n'existe pas encore sont
+  **automatiquement ignorées**.
+- `toolbox.py` ne se liste jamais lui-même.
+
+---
+
+## 🎨 Interface
+
+- **Rich** — bannière, panneaux, filets colorés, rendu UTF-8 propre (émojis inclus).
+- **questionary** — menus à flèches, filtrage en tapant, style accordé à la charte du projet.
+
+---
+
+## 🗺️ Feuille de route
+
+Le lanceur est conçu comme **socle réutilisable** : il lance les scripts par
+`subprocess` sans les modifier. Une future **interface graphique native (PySide6)**
+pourra réutiliser la même logique de découverte (`charger_outils()`) et d'exécution
+(`lancer()`).

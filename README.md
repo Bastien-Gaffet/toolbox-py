@@ -115,10 +115,24 @@ pip install -r requirements.txt
 | `sous_titres_toolkit.py` | aucune (stdlib uniquement) |
 | `miniatures_batch.py` | `Pillow`, `colorama` (optionnel) |
 | `sauvegarde_telephone.py` | `adb` (outil externe, non-Python), `colorama` (optionnel) |
+| `toolbox.py` (lanceur) | `rich`, `questionary` |
 
 ---
 
 ## 📖 Utilisation rapide
+
+### 🧰 Lanceur interactif (le plus simple)
+
+Un menu à flèches qui découvre tous les outils et les lance pour toi — aucun argument à retenir :
+
+```bash
+python toolbox.py
+```
+
+Il regroupe les scripts par catégorie (en lisant ce README), affiche leur description, et
+te laisse taper les arguments. Pour un usage direct en ligne de commande, voir ci-dessous.
+
+### Ligne de commande directe
 
 ```bash
 # Ranger le dossier Téléchargements
@@ -192,6 +206,7 @@ Chaque script dispose de sa propre documentation détaillée dans le dossier [`d
 
 ```
 toolbox-py/
+├── toolbox.py                  ← lanceur interactif
 ├── ranger_dossier.py
 ├── recherche_pdf.py
 ├── photos_manager.py
@@ -238,7 +253,8 @@ toolbox-py/
 │   ├── audio_converter_doc.md
 │   ├── sous_titres_toolkit_doc.md
 │   ├── miniatures_batch_doc.md
-│   └── sauvegarde_telephone_doc.md
+│   ├── sauvegarde_telephone_doc.md
+│   └── toolbox_doc.md
 ├── requirements.txt
 └── README.md
 ```

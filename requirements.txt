@@ -25,3 +25,7 @@ psutil
 
 # Couleurs terminal (tous les scripts)
 colorama
+
+# Lanceur interactif (toolbox.py)
+rich
+questionary
