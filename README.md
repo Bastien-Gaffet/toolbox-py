@@ -117,22 +117,37 @@ pip install -r requirements.txt
 | `sous_titres_toolkit.py` | aucune (stdlib uniquement) |
 | `miniatures_batch.py` | `Pillow`, `colorama` (optionnel) |
 | `sauvegarde_telephone.py` | `adb` (outil externe, non-Python), `colorama` (optionnel) |
-| `toolbox.py` (lanceur) | `rich`, `questionary` |
+| `toolbox.py` (lanceur terminal) | `rich`, `questionary` |
+| `toolbox_gui.py` (interface graphique) | `PySide6` |
+| `toolbox_core.py` (socle partagé) | aucune (stdlib uniquement) |
 
 ---
 
 ## 📖 Utilisation rapide
 
-### 🧰 Lanceur interactif (le plus simple)
+Deux interfaces découvrent automatiquement les outils (en lisant ce README) et les
+lancent pour toi — aucun argument à retenir. Elles partagent le même socle
+[`toolbox_core.py`](toolbox_core.py).
 
-Un menu à flèches qui découvre tous les outils et les lance pour toi — aucun argument à retenir :
+### 🖥️ Interface graphique
+
+Fenêtre avec liste des outils, zone d'arguments et sortie en direct :
+
+```bash
+python toolbox_gui.py
+```
+
+### 🧰 Lanceur en terminal
+
+Menu à flèches (fonctionne dans PowerShell ou cmd) :
 
 ```bash
 python toolbox.py
 ```
 
-Il regroupe les scripts par catégorie (en lisant ce README), affiche leur description, et
-te laisse taper les arguments. Pour un usage direct en ligne de commande, voir ci-dessous.
+Les deux regroupent les scripts par catégorie, affichent leur description, te laissent
+saisir les arguments, et proposent d'installer les dépendances manquantes. Pour un usage
+direct en ligne de commande, voir ci-dessous.
 
 ### Ligne de commande directe
 
@@ -213,7 +228,9 @@ Chaque script dispose de sa propre documentation détaillée dans le dossier [`d
 
 ```
 toolbox-py/
-├── toolbox.py                  ← lanceur interactif
+├── toolbox_gui.py              ← interface graphique (PySide6)
+├── toolbox.py                  ← lanceur terminal (Rich + questionary)
+├── toolbox_core.py             ← socle partagé (découverte, dépendances)
 ├── ranger_dossier.py
 ├── recherche_pdf.py
 ├── photos_manager.py
@@ -263,7 +280,8 @@ toolbox-py/
 │   ├── sous_titres_toolkit_doc.md
 │   ├── miniatures_batch_doc.md
 │   ├── sauvegarde_telephone_doc.md
-│   └── toolbox_doc.md
+│   ├── toolbox_doc.md
+│   └── toolbox_gui_doc.md
 ├── requirements.txt
 └── README.md
 ```

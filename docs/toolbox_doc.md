@@ -88,9 +88,9 @@ Conséquences pratiques :
 
 ---
 
-## 🗺️ Feuille de route
+## 🧩 Socle partagé
 
-Le lanceur est conçu comme **socle réutilisable** : il lance les scripts par
-`subprocess` sans les modifier. Une future **interface graphique native (PySide6)**
-pourra réutiliser la même logique de découverte (`charger_outils()`) et d'exécution
-(`lancer()`).
+La découverte des outils, la vérification des dépendances et l'exécution vivent dans
+[`toolbox_core.py`](toolbox_core.py) (stdlib pure). `toolbox.py` (ce lanceur terminal)
+et [`toolbox_gui.py`](toolbox_gui.py) (interface graphique PySide6) s'appuient tous deux
+dessus — voir [`toolbox_gui_doc.md`](toolbox_gui_doc.md).

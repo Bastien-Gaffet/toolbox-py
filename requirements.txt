@@ -26,6 +26,9 @@ cryptography
 # Couleurs terminal (tous les scripts)
 colorama
 
-# Lanceur interactif (toolbox.py)
+# Lanceur interactif en terminal (toolbox.py)
 rich
 questionary
+
+# Interface graphique (toolbox_gui.py)
+PySide6
