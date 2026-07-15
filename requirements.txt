@@ -8,7 +8,7 @@ pdfplumber
 Pillow
 piexif
 
-# Requêtes HTTP (telechargeur_batch.py)
+# Requêtes HTTP (telechargeur_batch.py, geo_ip.py)
 requests
 
 # Téléchargement vidéo/audio (video_downloader.py) — ffmpeg externe recommandé

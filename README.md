@@ -32,6 +32,7 @@
 | [`scan_reseau.py`](scan_reseau.py) | Scanne le réseau local : liste les appareils connectés (IP, nom, MAC, fabricant), détecte les ports ouverts |
 | [`telechargeur_batch.py`](telechargeur_batch.py) | Télécharge une liste d'URLs en parallèle avec reprise, vérification SHA-256 et support des cookies |
 | [`video_downloader.py`](video_downloader.py) | Télécharge des vidéos/audio depuis YouTube et ~1000 sites (yt-dlp) : choix de qualité, extraction MP3, playlists, simulation |
+| [`geo_ip.py`](geo_ip.py) | Géolocalise des IP/domaines (pays, ville, coordonnées, FAI, AS, proxy/VPN) via ip-api.com — batch et sa propre IP publique |
 
 ### 🔒 Sécurité & Confidentialité
 
@@ -104,6 +105,7 @@ pip install -r requirements.txt
 | `scan_reseau.py` | `colorama` (optionnel) |
 | `telechargeur_batch.py` | `requests`, `colorama` (optionnel) |
 | `video_downloader.py` | `yt-dlp`, `ffmpeg` (externe, pour HD/MP3), `colorama` (optionnel) |
+| `geo_ip.py` | `requests`, `colorama` (optionnel) |
 | `metadata_cleaner.py` | `Pillow`, `piexif`, `pypdf`, `python-docx`, `colorama` (optionnel) |
 | `chiffrer_dossier.py` | `cryptography`, `colorama` (optionnel) |
 | `effacement_securise.py` | `colorama` (optionnel) |
@@ -175,6 +177,10 @@ python scan_reseau.py --ports --vendeur
 python video_downloader.py "https://youtu.be/xxxx" -q 1080
 python video_downloader.py "https://youtu.be/xxxx" --audio
 
+# Géolocaliser une IP ou un domaine
+python geo_ip.py 8.8.8.8
+python geo_ip.py                      # ma propre IP publique
+
 # Nettoyer les caches système
 python nettoyeur_systeme.py --forcer
 
@@ -220,6 +226,7 @@ toolbox-py/
 ├── scan_reseau.py
 ├── telechargeur_batch.py
 ├── video_downloader.py
+├── geo_ip.py
 ├── metadata_cleaner.py
 ├── chiffrer_dossier.py
 ├── effacement_securise.py
@@ -244,6 +251,7 @@ toolbox-py/
 │   ├── scan_reseau_doc.md
 │   ├── telechargeur_batch_doc.md
 │   ├── video_downloader_doc.md
+│   ├── geo_ip_doc.md
 │   ├── metadata_cleaner_doc.md
 │   ├── chiffrer_dossier_doc.md
 │   ├── effacement_securise_doc.md
