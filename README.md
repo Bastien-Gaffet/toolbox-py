@@ -16,6 +16,7 @@
 | [`renommer_batch.py`](renommer_batch.py) | Renommage en masse : chercher/remplacer, numérotation, casse, nettoyage, préfixe/suffixe |
 | [`sync_dossiers.py`](sync_dossiers.py) | Synchronisation unidirectionnelle entre deux dossiers — rapport avant action, détection nouveaux/modifiés/supprimés |
 | [`nettoyer_dossier.py`](nettoyer_dossier.py) | Supprime fichiers temporaires, .DS_Store, Thumbs.db, dossiers vides, copies dupliquées (_copie, (1)…) |
+| [`extracteur_archives.py`](extracteur_archives.py) | Décompresse en masse les archives d'un dossier (zip, tar.gz, gz natifs ; 7z/rar en option), chacune dans son sous-dossier |
 
 ### 📊 Analyse & Rapports
 
@@ -102,6 +103,7 @@ pip install -r requirements.txt
 | `renommer_batch.py` | `colorama` (optionnel) |
 | `sync_dossiers.py` | `colorama` (optionnel) |
 | `nettoyer_dossier.py` | `colorama` (optionnel) |
+| `extracteur_archives.py` | `py7zr` (pour .7z), `rarfile` (pour .rar), `colorama` (optionnel) |
 | `scan_reseau.py` | `colorama` (optionnel) |
 | `telechargeur_batch.py` | `requests`, `colorama` (optionnel) |
 | `video_downloader.py` | `yt-dlp`, `ffmpeg` (externe, pour HD/MP3), `colorama` (optionnel) |
@@ -158,6 +160,10 @@ python ranger_dossier.py ~/Téléchargements
 
 # Rechercher dans des PDFs
 python recherche_pdf.py ./cours "photosynthèse" -i
+
+# Décompresser toutes les archives d'un dossier
+python extracteur_archives.py ./telechargements --simulation
+python extracteur_archives.py ./telechargements
 
 # Gérer les photos
 python photos_manager.py ~/Photos --doublons --simulation
@@ -237,6 +243,7 @@ toolbox-py/
 ├── renommer_batch.py
 ├── sync_dossiers.py
 ├── nettoyer_dossier.py
+├── extracteur_archives.py
 ├── inventaire_dossier.py
 ├── comparateur_dossiers.py
 ├── analyse_espace.py
@@ -262,6 +269,7 @@ toolbox-py/
 │   ├── renommer_batch_doc.md
 │   ├── sync_dossiers_doc.md
 │   ├── nettoyer_dossier_doc.md
+│   ├── extracteur_archives_doc.md
 │   ├── inventaire_dossier_doc.md
 │   ├── comparateur_dossiers_doc.md
 │   ├── analyse_espace_doc.md

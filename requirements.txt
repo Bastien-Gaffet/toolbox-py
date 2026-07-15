@@ -23,6 +23,10 @@ python-docx
 # Chiffrement AES-256 (chiffrer_dossier.py)
 cryptography
 
+# Extraction .7z (extracteur_archives.py) — zip/tar/gz marchent sans ça
+# (.rar : pip install rarfile + outil unrar/7z dans le PATH)
+py7zr
+
 # Couleurs terminal (tous les scripts)
 colorama
 
