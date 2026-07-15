@@ -11,6 +11,9 @@ piexif
 # Requêtes HTTP (telechargeur_batch.py)
 requests
 
+# Téléchargement vidéo/audio (video_downloader.py) — ffmpeg externe recommandé
+yt-dlp
+
 # Lecture/écriture PDF (metadata_cleaner.py)
 pypdf
 

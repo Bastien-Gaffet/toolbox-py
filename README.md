@@ -31,6 +31,7 @@
 |--------|-------------|
 | [`scan_reseau.py`](scan_reseau.py) | Scanne le réseau local : liste les appareils connectés (IP, nom, MAC, fabricant), détecte les ports ouverts |
 | [`telechargeur_batch.py`](telechargeur_batch.py) | Télécharge une liste d'URLs en parallèle avec reprise, vérification SHA-256 et support des cookies |
+| [`video_downloader.py`](video_downloader.py) | Télécharge des vidéos/audio depuis YouTube et ~1000 sites (yt-dlp) : choix de qualité, extraction MP3, playlists, simulation |
 
 ### 🔒 Sécurité & Confidentialité
 
@@ -102,6 +103,7 @@ pip install -r requirements.txt
 | `nettoyer_dossier.py` | `colorama` (optionnel) |
 | `scan_reseau.py` | `colorama` (optionnel) |
 | `telechargeur_batch.py` | `requests`, `colorama` (optionnel) |
+| `video_downloader.py` | `yt-dlp`, `ffmpeg` (externe, pour HD/MP3), `colorama` (optionnel) |
 | `metadata_cleaner.py` | `Pillow`, `piexif`, `pypdf`, `python-docx`, `colorama` (optionnel) |
 | `chiffrer_dossier.py` | `cryptography`, `colorama` (optionnel) |
 | `effacement_securise.py` | `colorama` (optionnel) |
@@ -169,6 +171,10 @@ python effacement_securise.py secret.pdf --methode dod
 # Scanner le réseau local
 python scan_reseau.py --ports --vendeur
 
+# Télécharger une vidéo (ou l'audio en MP3)
+python video_downloader.py "https://youtu.be/xxxx" -q 1080
+python video_downloader.py "https://youtu.be/xxxx" --audio
+
 # Nettoyer les caches système
 python nettoyeur_systeme.py --forcer
 
@@ -213,6 +219,7 @@ toolbox-py/
 ├── analyse_espace.py
 ├── scan_reseau.py
 ├── telechargeur_batch.py
+├── video_downloader.py
 ├── metadata_cleaner.py
 ├── chiffrer_dossier.py
 ├── effacement_securise.py
@@ -236,6 +243,7 @@ toolbox-py/
 │   ├── analyse_espace_doc.md
 │   ├── scan_reseau_doc.md
 │   ├── telechargeur_batch_doc.md
+│   ├── video_downloader_doc.md
 │   ├── metadata_cleaner_doc.md
 │   ├── chiffrer_dossier_doc.md
 │   ├── effacement_securise_doc.md
