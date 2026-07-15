@@ -24,6 +24,27 @@ Aucun argument. Le lanceur est purement interactif.
 
 ---
 
+## 📦 Vérification des dépendances au démarrage
+
+Au lancement, `toolbox.py` lit `requirements.txt` et vérifie quels paquets sont
+installés (via `importlib.metadata`, donc par nom de distribution PyPI — pas de souci
+avec `Pillow`/`PIL` etc.). S'il en manque, il les liste et propose de **tout installer
+en une fois** avec pip :
+
+```
+Dépendances manquantes : piexif, python-docx, psutil
+» Installer maintenant (3) avec pip ?  (O/n)
+```
+
+- **Oui** → `pip install piexif python-docx psutil` puis retour au menu.
+- **Non** → on continue quand même ; la commande d'installation est rappelée.
+
+Ainsi, plus besoin d'installer les dépendances à la main avant d'utiliser un outil
+(ex. `psutil` pour `moniteur_systeme.py`). Les outils externes non-Python (`ffmpeg`,
+`adb`) ne sont **pas** gérés par pip et restent à installer séparément.
+
+---
+
 ## 🧭 Fonctionnement
 
 ```

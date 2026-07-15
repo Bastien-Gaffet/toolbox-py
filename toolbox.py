@@ -20,10 +20,12 @@ import re
 import sys
 import shlex
 import subprocess
+import importlib.metadata as md
 from pathlib import Path
 
 RACINE = Path(__file__).resolve().parent
 README = RACINE / "README.md"
+REQUIREMENTS = RACINE / "requirements.txt"
 
 # ─── Dependances (message clair si absentes) ─────────────────────────────────
 try:
@@ -91,6 +93,74 @@ def charger_outils() -> dict:
 
     # Ne garder que les categories non vides
     return {cat: lst for cat, lst in outils.items() if lst}
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DEPENDANCES (verifie requirements.txt, propose d'installer les manquantes)
+# ═══════════════════════════════════════════════════════════════════════════
+
+def paquets_requis() -> list:
+    """Lit requirements.txt et retourne les noms de paquets (sans versions ni commentaires)."""
+    if not REQUIREMENTS.exists():
+        return []
+    noms = []
+    for ligne in REQUIREMENTS.read_text(encoding="utf-8").splitlines():
+        ligne = ligne.split("#", 1)[0].strip()
+        if not ligne:
+            continue
+        # Retire specificateurs de version/extras : Pillow>=10, paquet[extra], etc.
+        nom = re.split(r"[<>=!~;\[\s]", ligne, maxsplit=1)[0].strip()
+        if nom:
+            noms.append(nom)
+    return noms
+
+
+def paquets_manquants() -> list:
+    """Retourne les paquets de requirements.txt qui ne sont pas installes."""
+    manquants = []
+    for nom in paquets_requis():
+        try:
+            md.version(nom)          # verifie par nom de distribution PyPI
+        except md.PackageNotFoundError:
+            manquants.append(nom)
+    return manquants
+
+
+def installer(paquets: list) -> bool:
+    """Installe une liste de paquets via pip. Retourne True si succes."""
+    commande = [sys.executable, "-m", "pip", "install", *paquets]
+    console.print(f"\n[dim]$ {' '.join(commande)}[/dim]\n")
+    console.rule(style="cyan")
+    code = subprocess.run(commande).returncode
+    console.rule(style="cyan")
+    if code == 0:
+        console.print("[green]✓ Dépendances installées.[/green]\n")
+        return True
+    console.print("[red]✗ Échec de l'installation (voir le détail ci-dessus).[/red]\n")
+    return False
+
+
+def verifier_dependances():
+    """Au demarrage : signale les paquets manquants et propose de les installer."""
+    manquants = paquets_manquants()
+    if not manquants:
+        return
+    console.print(Panel(
+        "[yellow]Dépendances manquantes :[/yellow] "
+        + ", ".join(f"[bold]{p}[/bold]" for p in manquants)
+        + "\n[dim]Certains outils ne fonctionneront pas sans elles "
+          "(ex. psutil pour moniteur_systeme).[/dim]",
+        border_style="yellow", box=box.ROUNDED,
+    ))
+    rep = questionary.confirm(
+        f"Installer maintenant ({len(manquants)}) avec pip ?",
+        default=True, style=STYLE, qmark="»",
+    ).ask()
+    if rep:
+        installer(manquants)
+    else:
+        console.print("[dim]Ignoré — installable plus tard : "
+                      f"pip install {' '.join(manquants)}[/dim]\n")
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -225,6 +295,7 @@ def main():
     console.clear()
     banniere(outils)
     try:
+        verifier_dependances()
         menu_principal(outils)
     except KeyboardInterrupt:
         console.print("\n[yellow]Interrompu.[/yellow]\n")
