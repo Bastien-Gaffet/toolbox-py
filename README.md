@@ -44,7 +44,6 @@
 
 | Script | Description |
 |--------|-------------|
-| [`moniteur_systeme.py`](moniteur_systeme.py) | Tableau de bord terminal : CPU, RAM, disque, réseau, processus les plus gourmands — rafraîchi en temps réel |
 | [`nettoyeur_systeme.py`](nettoyeur_systeme.py) | Vide caches navigateurs, dossiers temporaires, vieux logs et fichiers de crash — estimation avant action |
 
 ### 🔧 Développement & Déploiement
@@ -106,7 +105,6 @@ pip install -r requirements.txt
 | `metadata_cleaner.py` | `Pillow`, `piexif`, `pypdf`, `python-docx`, `colorama` (optionnel) |
 | `chiffrer_dossier.py` | `cryptography`, `colorama` (optionnel) |
 | `effacement_securise.py` | `colorama` (optionnel) |
-| `moniteur_systeme.py` | `psutil`, `colorama` (optionnel) |
 | `nettoyeur_systeme.py` | `colorama` (optionnel) |
 | `env_checker.py` | aucune (stdlib uniquement) |
 | `projet_archiver.py` | aucune (stdlib uniquement) |
@@ -171,9 +169,6 @@ python effacement_securise.py secret.pdf --methode dod
 # Scanner le réseau local
 python scan_reseau.py --ports --vendeur
 
-# Surveiller le système en temps réel
-python moniteur_systeme.py --intervalle 3 --top 15
-
 # Nettoyer les caches système
 python nettoyeur_systeme.py --forcer
 
@@ -221,7 +216,6 @@ toolbox-py/
 ├── metadata_cleaner.py
 ├── chiffrer_dossier.py
 ├── effacement_securise.py
-├── moniteur_systeme.py
 ├── nettoyeur_systeme.py
 ├── env_checker.py
 ├── projet_archiver.py
@@ -245,7 +239,6 @@ toolbox-py/
 │   ├── metadata_cleaner_doc.md
 │   ├── chiffrer_dossier_doc.md
 │   ├── effacement_securise_doc.md
-│   ├── moniteur_systeme_doc.md
 │   ├── nettoyeur_systeme_doc.md
 │   ├── env_checker_doc.md
 │   ├── projet_archiver_doc.md

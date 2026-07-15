@@ -32,15 +32,15 @@ avec `Pillow`/`PIL` etc.). S'il en manque, il les liste et propose de **tout ins
 en une fois** avec pip :
 
 ```
-Dépendances manquantes : piexif, python-docx, psutil
-» Installer maintenant (3) avec pip ?  (O/n)
+Dépendances manquantes : piexif, python-docx
+» Installer maintenant (2) avec pip ?  (O/n)
 ```
 
-- **Oui** → `pip install piexif python-docx psutil` puis retour au menu.
+- **Oui** → `pip install piexif python-docx` puis retour au menu.
 - **Non** → on continue quand même ; la commande d'installation est rappelée.
 
 Ainsi, plus besoin d'installer les dépendances à la main avant d'utiliser un outil
-(ex. `psutil` pour `moniteur_systeme.py`). Les outils externes non-Python (`ffmpeg`,
+(ex. `piexif` pour `photos_manager.py`). Les outils externes non-Python (`ffmpeg`,
 `adb`) ne sont **pas** gérés par pip et restent à installer séparément.
 
 ---

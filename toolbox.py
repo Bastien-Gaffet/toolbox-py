@@ -149,7 +149,7 @@ def verifier_dependances():
         "[yellow]Dépendances manquantes :[/yellow] "
         + ", ".join(f"[bold]{p}[/bold]" for p in manquants)
         + "\n[dim]Certains outils ne fonctionneront pas sans elles "
-          "(ex. psutil pour moniteur_systeme).[/dim]",
+          "(ex. piexif pour photos_manager).[/dim]",
         border_style="yellow", box=box.ROUNDED,
     ))
     rep = questionary.confirm(

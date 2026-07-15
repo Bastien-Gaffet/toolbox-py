@@ -20,9 +20,6 @@ python-docx
 # Chiffrement AES-256 (chiffrer_dossier.py)
 cryptography
 
-# Monitoring système (moniteur_systeme.py)
-psutil
-
 # Couleurs terminal (tous les scripts)
 colorama
 
