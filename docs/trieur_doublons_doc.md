@@ -4,8 +4,11 @@ Détecte les fichiers **strictement identiques** (même contenu) dans toute une
 arborescence, **tous types confondus**. Complète `photos_manager.py` (qui, lui, ne
 traite que les photos/vidéos) en couvrant documents, archives, musiques, etc.
 
-Méthode : pré-filtre par **taille** (rapide), puis comparaison par **hash SHA-256**
-uniquement des fichiers de même taille — fiable même sur un disque entier.
+Méthode en trois filtres, du plus rapide au plus sûr : pré-filtre par **taille**, puis
+**hash partiel** (64 Ko de tête) pour écarter vite les fichiers différents, puis **hash
+SHA-256 complet** uniquement sur les fichiers dont le début coïncide déjà. Résultat :
+fiable même sur un disque entier, et bien plus rapide sur les grosses vidéos (on ne lit
+pas des Go pour rien).
 
 ---
 

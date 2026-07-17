@@ -102,16 +102,28 @@ def parser_taille(valeur: str) -> int:
         return 0
 
 
-def hash_fichier(chemin: Path, bloc: int = 1 << 20) -> str | None:
-    """SHA-256 d'un fichier (par blocs de 1 Mo). None si illisible."""
+def hash_fichier(chemin: Path, bloc: int = 1 << 20, limite: int | None = None) -> str | None:
+    """
+    SHA-256 d'un fichier (par blocs de 1 Mo). None si illisible.
+    Si `limite` est fournie, ne lit que les premiers `limite` octets
+    (hash partiel — sert au pré-filtrage rapide des gros fichiers).
+    """
     sha = hashlib.sha256()
+    lu = 0
     try:
         with open(chemin, "rb") as f:
             while True:
-                data = f.read(bloc)
+                if limite is not None:
+                    reste = limite - lu
+                    if reste <= 0:
+                        break
+                    data = f.read(min(bloc, reste))
+                else:
+                    data = f.read(bloc)
                 if not data:
                     break
                 sha.update(data)
+                lu += len(data)
     except OSError:
         return None
     return sha.hexdigest()
@@ -145,34 +157,62 @@ def collecter(racine: Path, min_taille: int, inclure_vides: bool) -> dict:
     return par_taille
 
 
+PARTIEL = 1 << 16   # 64 Ko lus pour le pré-filtre
+
+
 def trouver_doublons(par_taille: dict) -> list:
     """
-    Compare par hash les fichiers de même taille.
+    Compare par hash les fichiers de même taille, en DEUX passes :
+      1. hash PARTIEL (64 Ko de tête) — élimine vite les fichiers différents ;
+      2. hash COMPLET seulement pour ceux dont le début coïncide déjà.
+    Bien plus rapide sur les gros fichiers (vidéos) sans perte de fiabilité.
+
     Retourne une liste de groupes ; chaque groupe = liste de chemins identiques
     (≥ 2), triée : original d'abord (plus ancien, puis chemin le plus court).
     """
     # Seuls les groupes de taille avec >1 fichier valent la peine d'être hashés.
     a_hasher = [(t, chemins) for t, chemins in par_taille.items() if len(chemins) > 1]
-    total = sum(len(c) for _, c in a_hasher)
 
-    par_hash: dict = defaultdict(list)
+    # ── Passe 1 : hash partiel, clé = (taille, hash des 64 premiers Ko) ──
+    total1 = sum(len(c) for _, c in a_hasher)
+    par_partiel: dict = defaultdict(list)
     fait = 0
-    for _taille, chemins in a_hasher:
+    for taille, chemins in a_hasher:
         for chemin in chemins:
             fait += 1
-            if total:
-                print("\r  Comparaison  " + barre(fait, total), end="", flush=True)
+            if total1:
+                print("\r  Pré-filtre   " + barre(fait, total1), end="", flush=True)
+            h = hash_fichier(chemin, limite=PARTIEL)
+            if h is not None:
+                par_partiel[(taille, h)].append(chemin)
+    if total1:
+        print("\r" + " " * 60 + "\r", end="")
+
+    # ── Passe 2 : hash complet uniquement sur les groupes encore ambigus ──
+    confirmes = []          # petits fichiers (≤ 64 Ko) : le partiel = le complet
+    a_confirmer = []        # gros fichiers de même début : à confirmer en entier
+    for (taille, _h), chemins in par_partiel.items():
+        if len(chemins) < 2:
+            continue
+        (confirmes if taille <= PARTIEL else a_confirmer).append(chemins)
+
+    total2 = sum(len(c) for c in a_confirmer)
+    par_hash: dict = defaultdict(list)
+    fait = 0
+    for chemins in a_confirmer:
+        for chemin in chemins:
+            fait += 1
+            if total2:
+                print("\r  Comparaison  " + barre(fait, total2), end="", flush=True)
             h = hash_fichier(chemin)
             if h is not None:
                 par_hash[h].append(chemin)
-    if total:
+    if total2:
         print("\r" + " " * 60 + "\r", end="")
 
-    groupes = []
-    for chemins in par_hash.values():
-        if len(chemins) > 1:
-            chemins.sort(key=lambda p: (_mtime(p), len(str(p)), str(p)))
-            groupes.append(chemins)
+    groupes = [c for c in par_hash.values() if len(c) > 1] + confirmes
+    for g in groupes:
+        g.sort(key=lambda p: (_mtime(p), len(str(p)), str(p)))
     # Groupes les plus « coûteux » d'abord (taille × nb de doublons)
     groupes.sort(key=lambda g: g[0].stat().st_size * (len(g) - 1), reverse=True)
     return groupes
