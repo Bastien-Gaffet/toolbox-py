@@ -193,9 +193,15 @@ def trouver_categorie(fichier: Path, index: dict) -> str:
     return index.get(ext, DOSSIER_DIVERS)
 
 
-def destination_unique(dest: Path) -> Path:
-    """Retourne un chemin sans collision (ajoute _2, _3… si nécessaire)."""
-    if not dest.exists():
+def destination_unique(dest: Path, reserves: set | None = None) -> Path:
+    """
+    Retourne un chemin sans collision (ajoute _2, _3… si nécessaire).
+    `reserves` : chemins déjà attribués dans le lot courant mais pas encore créés
+    sur le disque — évite que deux fichiers de même nom (contenu différent) se
+    voient attribuer la même destination et s'écrasent lors du déplacement.
+    """
+    reserves = reserves if reserves is not None else set()
+    if not dest.exists() and dest not in reserves:
         return dest
     stem = dest.stem
     suffixe = dest.suffix
@@ -203,7 +209,7 @@ def destination_unique(dest: Path) -> Path:
     compteur = 2
     while True:
         nouveau = parent / f"{stem}_{compteur}{suffixe}"
-        if not nouveau.exists():
+        if not nouveau.exists() and nouveau not in reserves:
             return nouveau
         compteur += 1
 
@@ -221,6 +227,7 @@ def analyser_dossier(racine: Path, index: dict, recursif: bool = False) -> list:
     (déjà sous un dossier de catégorie).
     """
     mouvements = []
+    reserves: set = set()   # destinations déjà attribuées (pas encore sur le disque)
     # Racines de catégorie ("Images", "Documents", "Vidéo", …, "Divers") :
     # en récursif, on ne re-range pas ce qui est déjà dedans.
     cat_roots = {cle.split("/")[0] for cle in CATEGORIES} | {DOSSIER_DIVERS}
@@ -246,7 +253,8 @@ def analyser_dossier(racine: Path, index: dict, recursif: bool = False) -> list:
 
         categorie = trouver_categorie(entree, index)
         dossier_dest = racine / categorie
-        dest = destination_unique(dossier_dest / entree.name)
+        dest = destination_unique(dossier_dest / entree.name, reserves)
+        reserves.add(dest)
         mouvements.append((entree, dest))
 
     return mouvements
