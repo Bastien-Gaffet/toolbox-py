@@ -35,43 +35,55 @@ python chiffrer_dossier.py ./documents --simulation
 | `-d / --dechiffrer` | flag | non | Mode déchiffrement |
 | `-s / --sortie CHEMIN` | string | auto | Fichier `.enc` de sortie ou dossier de destination |
 | `--mdp MDP` | string | — | Mot de passe (demandé de façon sécurisée si absent) |
-| `--compression N` | int 0-9 | 6 | Niveau de compression ZIP avant chiffrement |
+| `--compression N` | int 0-9 | 0 | Niveau de compression ZIP avant chiffrement (0 = stockage, idéal pour photos/vidéos) |
 | `--simulation` | flag | non | Simuler sans écrire de fichier |
 
 ---
 
 ## 🔒 Fonctionnement technique
 
-Le processus de chiffrement se déroule en 3 étapes :
+Le chiffrement se fait **en flux**, par morceaux de 4 Mo, écrits directement sur le
+disque — **aucun pic mémoire**, adapté aux gros dossiers :
 
 ```
 Dossier source
-    ↓ compression ZIP
-Archive ZIP (en mémoire)
-    ↓ PBKDF2-HMAC-SHA256 (600 000 itérations) → clé AES-256
-    ↓ AES-256-GCM avec nonce aléatoire 12 octets
-Archive chiffrée (.enc)
+    ↓ archivage ZIP → fichier temporaire sur disque
+    ↓ PBKDF2-HMAC-SHA256 (600 000 itérations) → clé AES-256   [une seule fois, en RAM]
+    ↓ lecture par morceaux de 4 Mo → AES-256-GCM par morceau
+Archive chiffrée (.enc)         [le ZIP temporaire est ensuite supprimé]
 ```
 
-### Format du fichier `.enc`
+> Les 600 000 itérations PBKDF2 sont un **calcul CPU fait une seule fois** pour dériver
+> la clé — elles n'écrivent rien sur le disque et ne l'usent pas.
+
+### Format du fichier `.enc` (TBXENC02)
 
 ```
-[TBXENC01] [SEL 32o] [NONCE 12o] [DONNÉES CHIFFRÉES + TAG 16o]
+[TBXENC02] [SEL 32o] [NONCE_BASE 12o] [ morceaux... ]
+   morceau : [LONGUEUR 4o] [CHIFFRÉ + TAG 16o]
 ```
 
 | Champ | Taille | Description |
 |-------|--------|-------------|
-| Signature | 8 octets | `TBXENC01` — identifie le format |
+| Signature | 8 octets | `TBXENC02` — format en flux |
 | Sel | 32 octets | Aléatoire, unique à chaque chiffrement |
-| Nonce | 12 octets | Aléatoire, unique à chaque chiffrement |
-| Données | reste | ZIP chiffré AES-256-GCM + tag d'authenticité 16 octets |
+| Nonce de base | 12 octets | Aléatoire ; le nonce du morceau _i_ = base + _i_ |
+| Morceaux | reste | Chacun : longueur + données AES-256-GCM (tag 16 o inclus) |
+
+Chaque morceau est authentifié avec, en données associées (AAD), son **numéro** et un
+**drapeau « dernier morceau »**. Cela détecte non seulement toute modification, mais
+aussi la **réorganisation** et la **troncature** (retirer un morceau final invalide la
+vérification).
+
+> Les archives de l'ancien format monobloc `TBXENC01` restent **déchiffrables**
+> (rétrocompatibilité automatique).
 
 ### Propriétés de sécurité
 
 - **AES-256-GCM** — chiffrement authentifié : détecte toute modification du fichier
 - **PBKDF2 600 000 itérations** — ralentit les attaques par force brute (~1 s/tentative)
 - **Sel unique** — deux chiffrements du même dossier avec le même mot de passe produisent des archives différentes
-- **Tag GCM** — mot de passe incorrect → erreur immédiate, aucune donnée corrompue extraite
+- **Nonce par morceau + AAD numérotée** — mot de passe incorrect, corruption, réorganisation ou troncature → erreur immédiate, aucune donnée corrompue extraite
 
 ---
 
@@ -79,18 +91,21 @@ Archive chiffrée (.enc)
 
 | Niveau | Description | Vitesse | Taille |
 |--------|-------------|---------|--------|
-| 0 | Aucune compression | Très rapide | Identique à la source |
+| 0 (défaut) | Aucune compression | Très rapide | Identique à la source |
 | 1-3 | Légère | Rapide | Réduction modérée |
-| 6 (défaut) | Standard | Moyen | Bon équilibre |
+| 6 | Standard | Moyen | Bon équilibre |
 | 9 | Maximum | Lent | Taille minimale |
 
-La compression est appliquée avant le chiffrement. Pour des archives déjà compressées (ZIP, MP4, JPEG), le niveau 0 est préférable.
+La compression est appliquée avant le chiffrement. Le défaut est **0** car les photos et
+vidéos (JPEG, HEIC, MP4…) sont déjà compressées : compresser ne gagne rien et coûte du
+temps. Pour un dossier de **texte/documents**, monter à `--compression 6`.
 
 ---
 
 ## ⚠️ Limites
 
-- Le dossier entier est chargé en mémoire (via ZIP) avant chiffrement — **déconseillé pour les volumes > 2 Go**
+- Traitement **en flux** : pas de limite de taille pratique (un ZIP temporaire est créé
+  sur le même disque, il faut donc l'espace libre équivalent le temps de l'opération)
 - La dérivation PBKDF2 prend quelques secondes (c'est voulu — c'est une protection)
 - Dépendance : `cryptography` (`pip install cryptography`)
 
