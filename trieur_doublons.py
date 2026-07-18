@@ -218,6 +218,124 @@ def trouver_doublons(par_taille: dict) -> list:
     return groupes
 
 
+EXT_IMAGES_PIXELS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff", ".gif"}
+
+
+def _dimensions_image(f: Path):
+    """(dimensions, mode couleur) via l'en-tête seul — None si illisible."""
+    try:
+        from PIL import Image
+        with Image.open(f) as im:
+            return (im.size, im.mode)
+    except Exception:
+        return None
+
+
+def _hash_pixels_rapide(f: Path):
+    """Pré-filtre : hash des pixels décodés à 1/8e de résolution (mode draft
+    JPEG, ~10x plus rapide qu'un décodage complet). None si illisible."""
+    try:
+        from PIL import Image
+        with Image.open(f) as im:
+            dims = im.size
+            im.draft(None, (max(1, im.width // 8), max(1, im.height // 8)))
+            h = hashlib.sha256(im.tobytes()).hexdigest()
+            return (dims, h)
+    except Exception:
+        return None
+
+
+def _hash_pixels(f: Path):
+    """Clé (dimensions, mode, SHA-256 des pixels décodés) — None si illisible.
+    Fonction de module : requise par ProcessPoolExecutor (pickling)."""
+    try:
+        from PIL import Image
+        with Image.open(f) as im:
+            h = hashlib.sha256(im.tobytes()).hexdigest()
+            return (im.size, im.mode, h)
+    except Exception:
+        return None
+
+
+def trouver_doublons_pixels(racine: Path, min_taille: int) -> list:
+    """
+    Mode --pixels : compare les IMAGES par leurs pixels décodés, pas leurs octets.
+    Détecte les copies dont seules les métadonnées (EXIF…) diffèrent — cas
+    typique d'une photo re-téléversée par un cloud qui réécrit un champ d'en-tête.
+
+    Deux passes : pré-filtre par (dimensions, mode couleur) — lecture d'en-tête
+    seulement — puis hash SHA-256 des pixels décodés sur les groupes ambigus.
+    """
+    try:
+        from PIL import Image
+    except ImportError:
+        print(rouge("❌ Le mode --pixels nécessite Pillow : pip install pillow"))
+        sys.exit(1)
+
+    fichiers = []
+    for f in racine.rglob("*"):
+        if not f.is_file() or f.is_symlink():
+            continue
+        if f.suffix.lower() not in EXT_IMAGES_PIXELS:
+            continue
+        try:
+            if f.stat().st_size < max(min_taille, 1):
+                continue
+        except OSError:
+            continue
+        fichiers.append(f)
+
+    from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+
+    # ── Passe 1 : dimensions + mode couleur (en-tête seul, pas de décodage) ──
+    # Lecture d'en-têtes = surtout de l'attente disque : des threads suffisent.
+    par_dim: dict = defaultdict(list)
+    fait = 0
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        for f, cle in zip(fichiers, pool.map(_dimensions_image, fichiers)):
+            fait += 1
+            if fait % 50 == 0 or fait == len(fichiers):
+                print("\r  Dimensions   " + barre(fait, len(fichiers)), end="", flush=True)
+            if cle is not None:
+                par_dim[cle].append(f)
+    if fichiers:
+        print("\r" + " " * 60 + "\r", end="")
+
+    # ── Passe 2 : pixels à 1/8e de résolution (draft JPEG, très rapide) ──
+    candidats = [f for c in par_dim.values() if len(c) > 1 for f in c]
+    par_rapide: dict = defaultdict(list)
+    fait = 0
+    with ProcessPoolExecutor() as pool:
+        for f, cle in zip(candidats, pool.map(_hash_pixels_rapide, candidats, chunksize=16)):
+            fait += 1
+            if fait % 50 == 0 or fait == len(candidats):
+                print("\r  Pré-filtre   " + barre(fait, len(candidats)), end="", flush=True)
+            if cle is not None:
+                par_rapide[cle].append(f)
+    if candidats:
+        print("\r" + " " * 60 + "\r", end="")
+
+    # ── Passe 3 : décodage COMPLET, seulement si la version 1/8e coïncide ──
+    ambigus = [f for c in par_rapide.values() if len(c) > 1 for f in c]
+    par_hash: dict = defaultdict(list)
+    fait = 0
+    with ProcessPoolExecutor() as pool:
+        for f, cle in zip(ambigus, pool.map(_hash_pixels, ambigus, chunksize=8)):
+            fait += 1
+            if fait % 20 == 0 or fait == len(ambigus):
+                print("\r  Pixels       " + barre(fait, len(ambigus)), end="", flush=True)
+            if cle is not None:
+                par_hash[cle].append(f)
+    if ambigus:
+        print("\r" + " " * 60 + "\r", end="")
+
+    groupes = [c for c in par_hash.values() if len(c) > 1]
+    for g in groupes:
+        g.sort(key=lambda p: (_mtime(p), len(str(p)), str(p)))
+    groupes.sort(key=lambda g: g[0].stat().st_size * (len(g) - 1), reverse=True)
+    return groupes
+
+
 def _mtime(p: Path) -> float:
     try:
         return p.stat().st_mtime
@@ -258,20 +376,24 @@ def _rel(p: Path, racine: Path) -> str:
         return str(p)
 
 
-def agir(groupes: list, supprimer: bool, deplacer: Path | None, racine: Path):
+def agir(groupes: list, supprimer: bool, deplacer: Path | None, racine: Path,
+         sans_confirmation: bool = False):
     """Supprime ou déplace les doublons (tout sauf le 1er de chaque groupe)."""
     redondants = [d for g in groupes for d in g[1:]]
     if not redondants:
         return
 
     action = "supprimer" if supprimer else f"déplacer vers {deplacer}"
-    try:
-        rep = input(f"  {jaune('⚠')}  {action} {len(redondants)} fichier(s) ? [o/N] : ").strip().lower()
-    except EOFError:
-        rep = ""
-    if rep not in ("o", "oui", "y", "yes"):
-        print("  ⛔ Annulé.\n")
-        return
+    if sans_confirmation:
+        print(f"  {jaune('⚠')}  {action} {len(redondants)} fichier(s) (--oui : sans confirmation)")
+    else:
+        try:
+            rep = input(f"  {jaune('⚠')}  {action} {len(redondants)} fichier(s) ? [o/N] : ").strip().lower()
+        except EOFError:
+            rep = ""
+        if rep not in ("o", "oui", "y", "yes"):
+            print("  ⛔ Annulé.\n")
+            return
 
     faits = erreurs = 0
     for doublon in redondants:
@@ -316,12 +438,17 @@ Exemples :
     p.add_argument("dossier", help="Dossier à analyser (récursif)")
     p.add_argument("--min-taille", default="0", metavar="TAILLE",
                    help="Ignorer les fichiers plus petits (ex: 1M, 500K) — accélère")
+    p.add_argument("--pixels", action="store_true",
+                   help="Comparer les IMAGES par pixels décodés (détecte les copies\n"
+                        "aux métadonnées différentes ; nécessite pillow)")
     p.add_argument("--inclure-vides", action="store_true",
                    help="Inclure les fichiers de 0 octet (ignorés par défaut)")
     p.add_argument("--supprimer", action="store_true",
                    help="Supprimer les doublons (garde 1 exemplaire par groupe)")
     p.add_argument("--deplacer", metavar="DOSSIER",
                    help="Déplacer les doublons vers ce dossier au lieu de supprimer")
+    p.add_argument("--oui", action="store_true",
+                   help="Ne pas demander de confirmation avant d'agir (scripts)")
     p.add_argument("--json", metavar="FICHIER",
                    help="Exporter le rapport des groupes en JSON")
     return p.parse_args()
@@ -344,13 +471,16 @@ def main():
     if min_taille:
         print(f"  Filtre  : ≥ {formater_taille(min_taille)}")
 
-    print(gras("\n  Analyse des tailles..."))
-    par_taille = collecter(racine, min_taille, args.inclure_vides)
-    nb_fichiers = sum(len(v) for v in par_taille.values())
-    candidats = sum(len(v) for v in par_taille.values() if len(v) > 1)
-    print(f"  {nb_fichiers} fichier(s) — {candidats} candidat(s) de même taille à comparer")
-
-    groupes = trouver_doublons(par_taille)
+    if args.pixels:
+        print(gras("\n  Comparaison par pixels décodés (images uniquement)..."))
+        groupes = trouver_doublons_pixels(racine, min_taille)
+    else:
+        print(gras("\n  Analyse des tailles..."))
+        par_taille = collecter(racine, min_taille, args.inclure_vides)
+        nb_fichiers = sum(len(v) for v in par_taille.values())
+        candidats = sum(len(v) for v in par_taille.values() if len(v) > 1)
+        print(f"  {nb_fichiers} fichier(s) — {candidats} candidat(s) de même taille à comparer")
+        groupes = trouver_doublons(par_taille)
     nb_redondants, gaspille = afficher_rapport(groupes, racine)
 
     if args.json:
@@ -366,7 +496,7 @@ def main():
 
     if groupes and (args.supprimer or args.deplacer):
         deplacer = Path(args.deplacer).resolve() if args.deplacer else None
-        agir(groupes, args.supprimer, deplacer, racine)
+        agir(groupes, args.supprimer, deplacer, racine, args.oui)
     elif groupes:
         print(dim("  (rapport seul — ajoutez --supprimer ou --deplacer pour agir)\n"))
 

@@ -46,9 +46,25 @@ python trieur_doublons.py "D:\Rassemblement" --json rapport.json
 | `dossier` | Dossier à analyser (récursif) |
 | `--min-taille TAILLE` | Ignorer les fichiers plus petits (`1M`, `500K`, `2G`…) |
 | `--inclure-vides` | Inclure les fichiers de 0 octet (ignorés par défaut) |
+| `--pixels` | Comparer les **images par pixels décodés** (voir ci-dessous ; nécessite `pillow`) |
 | `--deplacer DOSSIER` | Déplacer les doublons vers ce dossier |
 | `--supprimer` | Supprimer les doublons (garde 1 exemplaire) |
+| `--oui` | Agir sans demander de confirmation (scripts) |
 | `--json FICHIER` | Exporter le rapport des groupes en JSON |
+
+## 🖼️ Mode `--pixels` (photos aux métadonnées réécrites)
+
+Certains services (pCloud, Google…) réécrivent l'en-tête EXIF au téléversement :
+la photo est identique **pixel par pixel** mais ses octets diffèrent — le hash
+classique ne peut pas la voir. Le mode `--pixels` compare les **images décodées**,
+en trois passes parallélisées (tous les cœurs), de la plus rapide à la plus sûre :
+
+1. **Dimensions + mode couleur** (lecture d'en-tête seule) ;
+2. **Pixels à 1/8ᵉ de résolution** (décodage JPEG « draft », ~10× plus rapide) ;
+3. **Décodage complet** uniquement sur les groupes qui coïncident encore.
+
+Seules les images aux pixels strictement identiques sont déclarées doublons.
+Ne traite que les images (`jpg, png, webp, bmp, tiff, gif`) ; dépend de `pillow`.
 
 `--supprimer` et `--deplacer` sont **exclusifs**.
 
