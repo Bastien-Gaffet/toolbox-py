@@ -19,7 +19,7 @@ python ranger_dossier.py /chemin/vers/dossier   # range un dossier spécifique
 python ranger_dossier.py ~/Téléchargements      # exemple : dossier Téléchargements
 ```
 
-Le script analyse tous les fichiers présents **à la racine** du dossier cible (non récursif), les classe par extension, puis demande une **confirmation** avant de déplacer quoi que ce soit.
+Le script analyse tous les fichiers présents **à la racine** du dossier cible (non récursif par défaut), les classe par extension, puis demande une **confirmation** avant de déplacer quoi que ce soit. Ajoutez `-r/--recursif` pour parcourir aussi les sous-dossiers.
 
 ---
 
@@ -34,6 +34,24 @@ Le script analyse tous les fichiers présents **à la racine** du dossier cible 
 ---
 
 ### Options
+
+#### `-r` ou `--recursif` — Ranger aussi les sous-dossiers
+
+Par défaut, seul le premier niveau est traité. Avec `-r`, le script parcourt **toute
+l'arborescence** et regroupe les fichiers dans des catégories **au niveau du dossier
+cible** — parfait pour un dossier de rassemblement contenant plusieurs sous-dossiers
+sources (téléphone, cloud…).
+
+```bash
+python ranger_dossier.py "D:\Rassemblement" --recursif --simulation
+python ranger_dossier.py "D:\Rassemblement" --recursif
+```
+
+Les fichiers **déjà classés** (déjà sous un dossier de catégorie) sont ignorés, donc
+relancer la commande est sans risque. L'annulation (`--annuler`) remet chaque fichier à
+son emplacement d'origine.
+
+---
 
 #### `-s` ou `--simulation` — Aperçu sans déplacer
 

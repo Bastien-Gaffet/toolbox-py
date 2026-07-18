@@ -19,6 +19,29 @@ import argparse
 from pathlib import Path
 from datetime import datetime
 
+
+def _init_terminal():
+    """Sortie UTF-8 (cadres, accents) + couleurs ANSI sous Windows."""
+    for flux in (sys.stdout, sys.stderr):
+        try:
+            flux.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+    if os.name == "nt":
+        try:
+            import ctypes
+            noyau = ctypes.windll.kernel32
+            for std in (-11, -12):
+                handle = noyau.GetStdHandle(std)
+                mode = ctypes.c_uint32()
+                if noyau.GetConsoleMode(handle, ctypes.byref(mode)):
+                    noyau.SetConsoleMode(handle, mode.value | 0x0004)
+        except Exception:
+            pass
+
+
+_init_terminal()
+
 # ─── Catégories et extensions ────────────────────────────────────────────────
 
 CATEGORIES = {
@@ -187,14 +210,23 @@ def destination_unique(dest: Path) -> Path:
 
 # ─── Coeur du rangement ──────────────────────────────────────────────────────
 
-def analyser_dossier(racine: Path, index: dict) -> list:
+def analyser_dossier(racine: Path, index: dict, recursif: bool = False) -> list:
     """
-    Analyse les fichiers du dossier racine (non récursif — 1 niveau).
-    Retourne la liste des déplacements prévus : [(source, destination), …]
+    Analyse les fichiers du dossier racine et retourne la liste des
+    déplacements prévus : [(source, destination), …].
+
+    Par défaut : 1 niveau (fichiers directement dans racine).
+    Avec recursif=True : parcourt tous les sous-dossiers et range les fichiers
+    dans des catégories au niveau de racine, en ignorant ceux déjà classés
+    (déjà sous un dossier de catégorie).
     """
     mouvements = []
+    # Racines de catégorie ("Images", "Documents", "Vidéo", …, "Divers") :
+    # en récursif, on ne re-range pas ce qui est déjà dedans.
+    cat_roots = {cle.split("/")[0] for cle in CATEGORIES} | {DOSSIER_DIVERS}
 
-    for entree in sorted(racine.iterdir()):
+    entrees = racine.rglob("*") if recursif else racine.iterdir()
+    for entree in sorted(entrees):
         # Ignorer les dossiers et les fichiers système
         if entree.is_dir():
             continue
@@ -202,9 +234,15 @@ def analyser_dossier(racine: Path, index: dict) -> list:
             continue
         if entree.suffix.lower() in EXTENSIONS_IGNOREES:
             continue
-        # Ignorer le script lui-même
         if entree.name == Path(__file__).name:
             continue
+        if entree.name.startswith(".rangement_"):   # journaux d'annulation
+            continue
+        # En récursif : ignorer ce qui est déjà dans un dossier de catégorie
+        if recursif:
+            rel = entree.relative_to(racine)
+            if rel.parts and rel.parts[0] in cat_roots:
+                continue
 
         categorie = trouver_categorie(entree, index)
         dossier_dest = racine / categorie
@@ -332,6 +370,10 @@ Exemples :
         help="Affiche ce qui serait fait sans déplacer aucun fichier"
     )
     parser.add_argument(
+        "-r", "--recursif", action="store_true",
+        help="Parcourt les sous-dossiers et range tout au niveau du dossier cible"
+    )
+    parser.add_argument(
         "-a", "--annuler", action="store_true",
         help="Annule le dernier rangement effectué (utilise le journal)"
     )
@@ -362,10 +404,14 @@ def main():
 
     # Analyse
     index = construire_index_extensions(CATEGORIES)
-    mouvements = analyser_dossier(racine, index)
+    mouvements = analyser_dossier(racine, index, recursif=args.recursif)
 
     if not mouvements:
-        print("Le dossier est déjà vide ou ne contient que des dossiers.")
+        if args.recursif:
+            print("Aucun fichier à ranger (déjà classé, ou dossier vide).")
+        else:
+            print("Le dossier est déjà vide ou ne contient que des dossiers.")
+            print("Astuce : ajoutez -r/--recursif pour ranger aussi les sous-dossiers.")
         return
 
     afficher_apercu(mouvements, racine)
