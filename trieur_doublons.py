@@ -350,6 +350,11 @@ def _dhash(f: Path):
         for y in range(8):
             for x in range(8):
                 h = (h << 1) | (px[y * 9 + x] > px[y * 9 + x + 1])
+        # Empreinte dégénérée (image quasi uniforme : ciel noir, mur…) :
+        # sans gradient exploitable, toutes ces images se confondraient.
+        bits = bin(h).count("1")
+        if bits < 4 or bits > 60:
+            return None
         return h
     except Exception:
         return None
@@ -551,9 +556,11 @@ Exemples :
                    help="Comparer les IMAGES par hachage perceptuel (détecte les copies\n"
                         "RECOMPRESSÉES/redimensionnées ; à relire avant d'agir — des\n"
                         "rafales peuvent se ressembler ; nécessite pillow)")
-    p.add_argument("--seuil", type=int, default=4, metavar="N",
-                   help="Distance de Hamming max pour --similaires (0-64, défaut 4 ;\n"
-                        "0 = empreintes strictement identiques)")
+    p.add_argument("--seuil", type=int, default=2, metavar="N",
+                   help="Distance de Hamming max pour --similaires (0-64, défaut 2 ;\n"
+                        "0 = empreintes strictement identiques ; au-delà de 2-3, le\n"
+                        "chaînage fusionne des photos sans rapport sur les grosses\n"
+                        "photothèques)")
     p.add_argument("--inclure-vides", action="store_true",
                    help="Inclure les fichiers de 0 octet (ignorés par défaut)")
     p.add_argument("--supprimer", action="store_true",

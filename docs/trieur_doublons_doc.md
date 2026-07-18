@@ -48,7 +48,7 @@ python trieur_doublons.py "D:\Rassemblement" --json rapport.json
 | `--inclure-vides` | Inclure les fichiers de 0 octet (ignorés par défaut) |
 | `--pixels` | Comparer les **images par pixels décodés** (voir ci-dessous ; nécessite `pillow`) |
 | `--similaires` | Comparer les **images par hachage perceptuel** (voir ci-dessous ; nécessite `pillow`) |
-| `--seuil N` | Distance de Hamming max pour `--similaires` (défaut 4, 0 = empreintes identiques) |
+| `--seuil N` | Distance de Hamming max pour `--similaires` (défaut 2, 0 = empreintes identiques ; les images quasi uniformes, sans gradient exploitable, sont ignorées) |
 | `--deplacer DOSSIER` | Déplacer les doublons vers ce dossier |
 | `--supprimer` | Supprimer les doublons (garde 1 exemplaire) |
 | `--oui` | Agir sans demander de confirmation (scripts) |
