@@ -336,6 +336,112 @@ def trouver_doublons_pixels(racine: Path, min_taille: int) -> list:
     return groupes
 
 
+def _dhash(f: Path):
+    """dHash 64 bits (gradient horizontal sur une réduction 9×8 en niveaux de
+    gris) — insensible à la recompression et au redimensionnement.
+    Fonction de module : requise par ProcessPoolExecutor (pickling)."""
+    try:
+        from PIL import Image
+        with Image.open(f) as im:
+            im.draft("L", (72, 72))  # décodage réduit pour les JPEG
+            im = im.convert("L").resize((9, 8), Image.BILINEAR)
+            px = list(im.getdata())
+        h = 0
+        for y in range(8):
+            for x in range(8):
+                h = (h << 1) | (px[y * 9 + x] > px[y * 9 + x + 1])
+        return h
+    except Exception:
+        return None
+
+
+def trouver_similaires(racine: Path, min_taille: int, seuil: int) -> list:
+    """
+    Mode --similaires : compare les IMAGES par hachage perceptuel (dHash).
+    Détecte les copies RECOMPRESSÉES ou redimensionnées (WhatsApp, réseaux
+    sociaux, téléchargements) que la comparaison exacte ne voit pas.
+
+    ⚠ « Visuellement semblable » n'est pas « identique » : des photos prises en
+    rafale peuvent se ressembler assez pour être regroupées — TOUJOURS relire
+    le rapport avant --supprimer/--deplacer. Dans chaque groupe, l'exemplaire
+    gardé est le PLUS GROS fichier (meilleure qualité présumée).
+    """
+    try:
+        from PIL import Image  # noqa: F401
+    except ImportError:
+        print(rouge("❌ Le mode --similaires nécessite Pillow : pip install pillow"))
+        sys.exit(1)
+
+    fichiers = []
+    for f in racine.rglob("*"):
+        if not f.is_file() or f.is_symlink():
+            continue
+        if ".krino" in f.parts:  # cache interne de Krino (miniatures dérivées)
+            continue
+        if f.suffix.lower() not in EXT_IMAGES_PIXELS:
+            continue
+        try:
+            if f.stat().st_size < max(min_taille, 1):
+                continue
+        except OSError:
+            continue
+        fichiers.append(f)
+
+    from concurrent.futures import ProcessPoolExecutor
+
+    # ── Passe 1 : dHash de chaque image, en parallèle ──
+    hashes: list = []
+    fait = 0
+    with ProcessPoolExecutor() as pool:
+        for f, h in zip(fichiers, pool.map(_dhash, fichiers, chunksize=16)):
+            fait += 1
+            if fait % 50 == 0 or fait == len(fichiers):
+                print("\r  dHash        " + barre(fait, len(fichiers)), end="", flush=True)
+            if h is not None:
+                hashes.append((f, h))
+    if fichiers:
+        print("\r" + " " * 60 + "\r", end="")
+
+    # ── Passe 2 : regroupement par distance de Hamming ≤ seuil (union-find) ──
+    # Les hash strictement identiques sont d'abord fusionnés en « uniques »
+    # pour réduire la comparaison par paires.
+    par_hash: dict = defaultdict(list)
+    for f, h in hashes:
+        par_hash[h].append(f)
+    uniques = list(par_hash.keys())
+
+    parent = {h: h for h in uniques}
+
+    def trouver(h):
+        while parent[h] != h:
+            parent[h] = parent[parent[h]]
+            h = parent[h]
+        return h
+
+    if seuil > 0:
+        n = len(uniques)
+        for i in range(n):
+            if i % 200 == 0 or i == n - 1:
+                print("\r  Rapprochement" + barre(i + 1, n), end="", flush=True)
+            hi = uniques[i]
+            for j in range(i + 1, n):
+                if (hi ^ uniques[j]).bit_count() <= seuil:
+                    parent[trouver(hi)] = trouver(uniques[j])
+        if n:
+            print("\r" + " " * 60 + "\r", end="")
+
+    groupes_dict: dict = defaultdict(list)
+    for h in uniques:
+        groupes_dict[trouver(h)].extend(par_hash[h])
+
+    groupes = [g for g in groupes_dict.values() if len(g) > 1]
+    # Gardé = le plus gros fichier (qualité), pas le plus ancien
+    for g in groupes:
+        g.sort(key=lambda p: (-(p.stat().st_size if p.exists() else 0), str(p)))
+    groupes.sort(key=lambda g: sum(p.stat().st_size for p in g[1:]), reverse=True)
+    return groupes
+
+
 def _mtime(p: Path) -> float:
     try:
         return p.stat().st_mtime
@@ -349,7 +455,7 @@ def _mtime(p: Path) -> float:
 
 def afficher_rapport(groupes: list, racine: Path):
     nb_redondants = sum(len(g) - 1 for g in groupes)
-    gaspille = sum(g[0].stat().st_size * (len(g) - 1) for g in groupes)
+    gaspille = sum(d.stat().st_size for g in groupes for d in g[1:] if d.exists())
 
     if not groupes:
         print(vert("\n  ✅ Aucun doublon trouvé.\n"))
@@ -441,6 +547,13 @@ Exemples :
     p.add_argument("--pixels", action="store_true",
                    help="Comparer les IMAGES par pixels décodés (détecte les copies\n"
                         "aux métadonnées différentes ; nécessite pillow)")
+    p.add_argument("--similaires", action="store_true",
+                   help="Comparer les IMAGES par hachage perceptuel (détecte les copies\n"
+                        "RECOMPRESSÉES/redimensionnées ; à relire avant d'agir — des\n"
+                        "rafales peuvent se ressembler ; nécessite pillow)")
+    p.add_argument("--seuil", type=int, default=4, metavar="N",
+                   help="Distance de Hamming max pour --similaires (0-64, défaut 4 ;\n"
+                        "0 = empreintes strictement identiques)")
     p.add_argument("--inclure-vides", action="store_true",
                    help="Inclure les fichiers de 0 octet (ignorés par défaut)")
     p.add_argument("--supprimer", action="store_true",
@@ -471,7 +584,16 @@ def main():
     if min_taille:
         print(f"  Filtre  : ≥ {formater_taille(min_taille)}")
 
-    if args.pixels:
+    if args.pixels and args.similaires:
+        print(rouge("❌ Choisissez --pixels OU --similaires, pas les deux."))
+        sys.exit(1)
+
+    if args.similaires:
+        print(gras("\n  Comparaison perceptuelle (images uniquement)..."))
+        print(jaune("  ⚠ Semblable ≠ identique : relisez le rapport avant d'agir "
+                    "(les rafales peuvent se ressembler)."))
+        groupes = trouver_similaires(racine, min_taille, args.seuil)
+    elif args.pixels:
         print(gras("\n  Comparaison par pixels décodés (images uniquement)..."))
         groupes = trouver_doublons_pixels(racine, min_taille)
     else:

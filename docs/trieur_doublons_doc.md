@@ -47,6 +47,8 @@ python trieur_doublons.py "D:\Rassemblement" --json rapport.json
 | `--min-taille TAILLE` | Ignorer les fichiers plus petits (`1M`, `500K`, `2G`…) |
 | `--inclure-vides` | Inclure les fichiers de 0 octet (ignorés par défaut) |
 | `--pixels` | Comparer les **images par pixels décodés** (voir ci-dessous ; nécessite `pillow`) |
+| `--similaires` | Comparer les **images par hachage perceptuel** (voir ci-dessous ; nécessite `pillow`) |
+| `--seuil N` | Distance de Hamming max pour `--similaires` (défaut 4, 0 = empreintes identiques) |
 | `--deplacer DOSSIER` | Déplacer les doublons vers ce dossier |
 | `--supprimer` | Supprimer les doublons (garde 1 exemplaire) |
 | `--oui` | Agir sans demander de confirmation (scripts) |
@@ -65,6 +67,21 @@ en trois passes parallélisées (tous les cœurs), de la plus rapide à la plus 
 
 Seules les images aux pixels strictement identiques sont déclarées doublons.
 Ne traite que les images (`jpg, png, webp, bmp, tiff, gif`) ; dépend de `pillow`.
+
+## 👁️ Mode `--similaires` (copies recompressées / redimensionnées)
+
+Une photo passée par WhatsApp, un réseau social ou un téléchargement est
+**ré-encodée** : mêmes images à l'œil, pixels différents — invisible pour
+`--pixels`. Le mode `--similaires` calcule un **dHash 64 bits** (gradient
+horizontal d'une réduction 9×8 en niveaux de gris), insensible à la
+recompression et au redimensionnement, puis regroupe les empreintes dont la
+distance de Hamming est ≤ `--seuil` (union-find).
+
+⚠️ **Semblable n'est pas identique** : des photos prises en rafale peuvent se
+ressembler assez pour être regroupées. **Toujours relire le rapport** (ou le
+`--json`) avant `--supprimer`/`--deplacer`. Dans ce mode, l'exemplaire gardé
+est le **plus gros fichier** (meilleure qualité présumée), et le cache
+`.krino/` est ignoré. `--pixels` et `--similaires` sont exclusifs.
 
 `--supprimer` et `--deplacer` sont **exclusifs**.
 
