@@ -107,6 +107,7 @@ pip install -r requirements.txt
 | `nettoyer_dossier.py` | `colorama` (optionnel) |
 | `extracteur_archives.py` | `py7zr` (pour .7z), `rarfile` (pour .rar), `colorama` (optionnel) |
 | `trieur_doublons.py` | `colorama` (optionnel) |
+| `importer_nouveautes.py` | `rclone` (outil externe, pour le cloud), `colorama` (optionnel) |
 | `scan_reseau.py` | `colorama` (optionnel) |
 | `telechargeur_batch.py` | `requests`, `colorama` (optionnel) |
 | `video_downloader.py` | `yt-dlp`, `ffmpeg` (externe, pour HD/MP3), `colorama` (optionnel) |
@@ -252,6 +253,7 @@ toolbox-py/
 ├── nettoyer_dossier.py
 ├── extracteur_archives.py
 ├── trieur_doublons.py
+├── importer_nouveautes.py
 ├── inventaire_dossier.py
 ├── comparateur_dossiers.py
 ├── analyse_espace.py
@@ -279,6 +281,7 @@ toolbox-py/
 │   ├── nettoyer_dossier_doc.md
 │   ├── extracteur_archives_doc.md
 │   ├── trieur_doublons_doc.md
+│   ├── importer_nouveautes_doc.md
 │   ├── inventaire_dossier_doc.md
 │   ├── comparateur_dossiers_doc.md
 │   ├── analyse_espace_doc.md
