@@ -13,6 +13,7 @@
 | [`ranger_dossier.py`](ranger_dossier.py) | Range un dossier par catégorie de fichiers (documents, images, vidéos, archives, exécutables…) avec annulation possible |
 | [`recherche_pdf.py`](recherche_pdf.py) | Recherche un mot, une phrase ou une regex dans tous les PDF d'une arborescence |
 | [`photos_manager.py`](photos_manager.py) | Supprime les doublons de photos/vidéos, renomme en format normalisé, détecte les screenshots, classe par année/mois |
+| [`importer_nouveautes.py`](importer_nouveautes.py) | Importe seulement les nouvelles photos d'une source (pCloud…) sans reprendre ce qui a déjà été trié ou supprimé — registre d'empreintes permanent |
 | [`renommer_batch.py`](renommer_batch.py) | Renommage en masse : chercher/remplacer, numérotation, casse, nettoyage, préfixe/suffixe |
 | [`sync_dossiers.py`](sync_dossiers.py) | Synchronisation unidirectionnelle entre deux dossiers — rapport avant action, détection nouveaux/modifiés/supprimés |
 | [`nettoyer_dossier.py`](nettoyer_dossier.py) | Supprime fichiers temporaires, .DS_Store, Thumbs.db, dossiers vides, copies dupliquées (_copie, (1)…) |
