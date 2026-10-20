@@ -465,22 +465,28 @@ def empreintes_rclone(rclone: str, distant: str, fichiers: list[dict],
         f["hash"] = par_chemin.get(f["chemin"])
 
 
-def marquer_avant_rclone(racine: Path, fichiers: list[dict], distant: str,
-                         avant: datetime) -> tuple[int, int]:
-    """Mémorise l'ancien contenu distant (avant la date) sans le télécharger."""
+def marquer_avant_rclone(racine: Path, rclone: str, distant: str, fichiers: list[dict],
+                         avant: datetime, mot_de_passe: str | None) -> tuple[int, int]:
+    """Mémorise l'ancien contenu distant (avant la date) sans le télécharger.
+    Les empreintes sont mémorisées aussi : si un nouveau téléphone réuploade ces
+    photos (autre dossier, autre date), elles seront quand même reconnues. C'est
+    la seule trace des photos rejetées puis supprimées définitivement du disque."""
+    seuil = avant.timestamp()
+    anciens = [f for f in fichiers if f["mtime"] < seuil]
+    print(f"   Empreintes de {len(anciens)} ancien(s) fichier(s) ...", flush=True)
+    empreintes_rclone(rclone, distant, anciens, mot_de_passe)
+
     db = ouvrir_registre(racine)
-    date, seuil = maintenant(), avant.timestamp()
-    n_vus = n_recents = 0
-    for f in fichiers:
-        if f["mtime"] >= seuil:
-            n_recents += 1
-            continue
+    date = maintenant()
+    for f in anciens:
+        if f["hash"]:
+            db.execute("INSERT OR IGNORE INTO connus VALUES (?, ?, ?, ?)",
+                       (f["hash"], "avant", f"{distant}/{f['chemin']}", date))
         db.execute("INSERT OR IGNORE INTO vus VALUES (?, ?, ?)",
                    (f["cle"], f"avant:{distant}", date))
-        n_vus += 1
     db.commit()
     db.close()
-    return n_vus, n_recents
+    return len(anciens), len(fichiers) - len(anciens)
 
 
 def trier_rclone(racine: Path, rclone: str, distant: str, fichiers: list[dict],
@@ -723,13 +729,66 @@ def flux_mise_en_place(s: Session) -> None:
         return
     avant = demander_date("     Date de ton dernier import (garde de la marge, AAAA-MM-JJ)")
     print(jaune("     Tout ce qui est antérieur sera considéré comme déjà trié."))
+    s.prefs["seuil"] = f"{avant:%Y-%m-%d}"
     for distant in s.choisir_distants():
         fichiers = s.lister(distant)
-        n_vus, n_recents = marquer_avant_rclone(racine, fichiers, distant, avant)
+        n_vus, n_recents = marquer_avant_rclone(racine, s.rclone, distant, fichiers,
+                                                avant, s.mot_de_passe)
         print(f"   {vert(str(n_vus))} marqué(s) déjà vu(s), "
               f"{n_recents} postérieur(s) laissé(s) pour l'import")
     enregistrer_prefs(s.prefs)
     print(vert("\n✓ Mise en place terminée. Utilise maintenant « Importer les nouveautés »."))
+
+
+def ignorer_definitivement(racine: Path, fichiers: list[dict]) -> None:
+    db = ouvrir_registre(racine)
+    date = maintenant()
+    for f in fichiers:
+        if f["hash"]:
+            db.execute("INSERT OR IGNORE INTO connus VALUES (?, ?, ?, ?)",
+                       (f["hash"], "ignore", f["chemin"], date))
+        db.execute("INSERT OR IGNORE INTO vus VALUES (?, ?, ?)", (f["cle"], "ignore", date))
+    db.commit()
+    db.close()
+
+
+def filtrer_anciens(s: Session, racine: Path, a_importer: list) -> list:
+    """Filet de sécurité : un fichier inconnu mais daté d'avant la mise en place
+    (ex. un nouveau téléphone qui réuploade de vieilles photos absentes du
+    registre) n'est pas importé en silence, on demande quoi en faire."""
+    if not s.prefs.get("seuil"):
+        return a_importer
+    seuil = datetime.strptime(s.prefs["seuil"], "%Y-%m-%d").timestamp()
+    recents, anciens = [], []
+    for distant, nouveaux, prefixe in a_importer:
+        vieux = [f for f in nouveaux if f["mtime"] < seuil]
+        if len(vieux) < len(nouveaux):
+            recents.append((distant, [f for f in nouveaux if f["mtime"] >= seuil], prefixe))
+        if vieux:
+            anciens.append((distant, vieux, "_anciens_a_verifier"))
+    if not anciens:
+        return a_importer
+
+    n = sum(len(v) for _, v, _ in anciens)
+    print(jaune(f"\n⚠ {n} fichier(s) inconnu(s) datent d'avant le {s.prefs['seuil']} "
+                "(ex. réupload d'un nouveau téléphone) :"))
+    for distant, vieux, _ in anciens:
+        for f in sorted(vieux, key=lambda f: f["mtime"])[:8]:
+            print(f"     ? {datetime.fromtimestamp(f['mtime']):%Y-%m-%d}  {f['chemin']}")
+        if len(vieux) > 8:
+            print(f"     ... et {len(vieux) - 8} autre(s)")
+    choix = choisir("Que faire de ces anciens fichiers ?", [
+        "Les importer à part dans _anciens_a_verifier (je les regarde dans krino)",
+        "Les ignorer définitivement (déjà triés à l'époque)",
+        "Les laisser pour plus tard (redemandé au prochain import)",
+    ])
+    if choix == 0:
+        return recents + anciens
+    if choix == 1:
+        for _, vieux, _ in anciens:
+            ignorer_definitivement(racine, vieux)
+        print(vert(f"   ✓ {n} fichier(s) ignoré(s), ils ne seront plus proposés"))
+    return recents
 
 
 def flux_import_cloud(s: Session) -> None:
@@ -757,20 +816,21 @@ def flux_import_cloud(s: Session) -> None:
               f"doublons {tri['doublon_source']}  →  "
               + gras(vert(f"{len(tri['nouveaux'])} nouveau(x) ({taille / 1e9:.2f} Go)")))
         if tri["nouveaux"]:
-            a_importer.append((distant, tri["nouveaux"]))
+            a_importer.append((distant, tri["nouveaux"], ""))
 
+    a_importer = filtrer_anciens(s, racine, a_importer)
     if not a_importer:
-        print(vert("\n✓ Rien de nouveau, tout est déjà trié."))
+        print(vert("\n✓ Rien de nouveau à télécharger."))
         return
 
-    for distant, nouveaux in a_importer:
+    for distant, nouveaux, _ in a_importer:
         print(cyan(f"\n   {distant}"))
         for f in sorted(nouveaux, key=lambda f: f["mtime"])[-10:]:
             print(f"     + {datetime.fromtimestamp(f['mtime']):%Y-%m-%d}  {f['chemin']}")
         if len(nouveaux) > 10:
             print(f"     ... ({len(nouveaux) - 10} autre(s) plus ancien(s))")
 
-    total = sum(len(n) for _, n in a_importer)
+    total = sum(len(n) for _, n, _ in a_importer)
     nom = f"import_{datetime.now():%Y-%m-%d_%H%M}"
     if not confirmer(f"\nTélécharger ces {total} fichier(s) dans "
                      f"{DOSSIER_IMPORT}\\{nom} ?", defaut=True):
@@ -778,9 +838,9 @@ def flux_import_cloud(s: Session) -> None:
         return
 
     n_total = 0
-    for distant, nouveaux in a_importer:
+    for distant, nouveaux, prefixe in a_importer:
         sous = distant.split(":", 1)[-1].replace("/", "_") or "racine"
-        dest = racine / DOSSIER_IMPORT / nom / sous
+        dest = racine / DOSSIER_IMPORT / nom / prefixe / sous
         print(gras(f"\nTéléchargement depuis {distant}"))
         n_total += telecharger_rclone(racine, s.rclone, distant, nouveaux, dest,
                                       s.mot_de_passe)

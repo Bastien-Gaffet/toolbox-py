@@ -37,6 +37,15 @@ Le cloud est lu avec [rclone](https://rclone.org) (remote déjà configuré par 
 3. pour les autres, l'empreinte SHA-256 est demandée **au cloud** (`rclone hashsum`, 16 en parallèle) et comparée au registre ;
 4. seules les vraies nouveautés sont téléchargées (`rclone copy`, empreinte vérifiée par rclone).
 
+### Changement de téléphone
+
+Un nouveau téléphone réuploade souvent toutes les anciennes photos dans un nouveau dossier du cloud. Elles sont reconnues car :
+
+- la mise en place mémorise l'**empreinte** de tout l'ancien contenu du cloud (pas seulement nom/date). C'est aussi la seule trace des photos rejetées puis supprimées définitivement du disque ;
+- les copies d'un téléphone à l'autre sont identiques octet pour octet (vérifié sur pCloud : 203/204).
+
+Filet de sécurité : un fichier inconnu mais daté d'avant la date de mise en place n'est pas importé en silence. L'assistant le liste et propose de l'importer à part (`_anciens_a_verifier`), de l'ignorer définitivement, ou de reporter la décision.
+
 Si la config rclone est chiffrée, l'assistant demande son mot de passe (gardé en mémoire le temps de la session seulement).
 
 ---
