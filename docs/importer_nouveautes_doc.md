@@ -25,7 +25,7 @@ Sans argument, un menu pose les questions une par une (dossier de tri, dossiers 
 | Importer les nouveautés du cloud | Le flux habituel : compare, montre la liste, télécharge après confirmation, propose la sauvegarde |
 | Importer depuis un dossier local | Carte SD, dossier téléchargé… (simulation puis confirmation) |
 | Mise en place du registre | 1re fois : indexe le disque trié et marque l'ancien contenu du cloud comme déjà vu |
-| Sauvegarder le dossier de tri | Miroir `robocopy /MIR` vers la sauvegarde (D:\Sauvegardes\main_tri par défaut) |
+| Sauvegarder le dossier de tri | `robocopy` vers la sauvegarde (D:\Sauvegardes\main_tri par défaut). Ajout seulement par défaut : rien n'est supprimé de la sauvegarde ; miroir `/MIR` uniquement sur demande |
 | Voir le registre | Résumé |
 
 ### Source cloud via rclone
@@ -105,6 +105,11 @@ python importer_nouveautes.py statut E:\Bastien\main_tri
 `importer` réindexe d'abord le dossier de tri pour prendre en compte les photos ajoutées à la main. Un cache évite de relire les fichiers déjà hashés, même s'ils ont été déplacés.
 
 ---
+
+## 🛡️ Sécurité des données
+
+- L'outil ne supprime **jamais** de fichier du disque ni du cloud : rclone copie dans un seul sens (cloud → disque). Vider le cloud ou en perdre l'accès ne touche pas au disque.
+- Le registre conserve les empreintes de l'ancien contenu du cloud : il reste valable même si le cloud est vidé. **Faire la mise en place tant que le cloud est accessible.**
 
 ## ⚠️ Limites
 

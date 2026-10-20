@@ -570,12 +570,14 @@ def telecharger_rclone(racine: Path, rclone: str, distant: str, nouveaux: list[d
 # SAUVEGARDE (robocopy)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def sauvegarder(racine: Path, cible: Path) -> bool:
-    """Miroir du dossier de tri vers la sauvegarde (robocopy /MIR)."""
+def sauvegarder(racine: Path, cible: Path, miroir: bool = False) -> bool:
+    """Copie le dossier de tri vers la sauvegarde avec robocopy.
+    Par défaut : ajout seulement (/E), rien n'est jamais supprimé de la
+    sauvegarde. miroir=True (/MIR) y supprime aussi ce qui a quitté le tri."""
     cible.mkdir(parents=True, exist_ok=True)
     journal = cible.parent / f"{cible.name}_sauvegarde.log"
     print(cyan(f"\n   {racine}  →  {cible}"))
-    res = subprocess.run(["robocopy", str(racine), str(cible), "/MIR",
+    res = subprocess.run(["robocopy", str(racine), str(cible), "/MIR" if miroir else "/E",
                           "/COPY:DAT", "/DCOPY:DAT", "/MT:16", "/R:1", "/W:1",
                           "/NP", "/NFL", "/NDL", f"/LOG:{journal}", "/TEE"])
     # robocopy : 0-7 = succès, 8+ = erreurs
@@ -865,11 +867,13 @@ def flux_sauvegarde(s: Session, racine: Path | None = None) -> None:
     print(gras("\n═══ Sauvegarde du dossier de tri ═══"))
     racine = racine or s.racine()
     cible = Path(demander("Dossier de sauvegarde", s.prefs["sauvegarde"]))
-    print(jaune("   Miroir : ce qui a été supprimé du tri le sera aussi de la sauvegarde."))
+    print("   Par défaut, la sauvegarde ne fait qu'ajouter : rien n'y est jamais supprimé.")
+    miroir = confirmer(jaune("   Faire un miroir à la place (supprime de la sauvegarde ce "
+                             "que tu as supprimé du tri) ?"), defaut=False)
     if confirmer("   Lancer ?", defaut=True):
         s.prefs["sauvegarde"] = str(cible)
         enregistrer_prefs(s.prefs)
-        sauvegarder(racine, cible)
+        sauvegarder(racine, cible, miroir)
 
 
 def assistant() -> None:
